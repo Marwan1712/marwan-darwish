@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airline Support Finder Pro</title>
+    
+    <!-- Favicon Implementation (Logo at the tab) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M10 80 L35 20 L50 50 L65 20 L90 80 L75 80 L65 55 L50 85 L35 55 L25 80 Z' fill='%232563eb'/><path d='M5 85 L95 85 L85 90 L15 90 Z' fill='%230f172a'/></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-primary: #2563eb;
+            --brand-dark: #0f172a;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        body {
+            background-color: #ffffff;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .airline-card {
+            animation: slideIn 0.3s ease-out forwards;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #f1f5f9;
+        }
+        
+        .airline-card:hover {
+            background: #ffffff;
+            border-color: #e2e8f0;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-bar:focus-within {
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        #copyToast { 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            bottom: -50px;
+            opacity: 0;
+        }
+        
+        #copyToast.show {
+            bottom: 24px;
+            opacity: 1;
+        }
+
+        .portal-btn {
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portal-btn:after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 0; height: 2px;
+            background: currentColor;
+            transition: width 0.3s ease;
+        }
+
+        .portal-btn:hover:after { width: 100%; }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .phone-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            color: #2563eb;
+            background: #eff6ff;
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #dbeafe;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .phone-tag:hover {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- Notification -->
+    <div id="copyToast" class="fixed left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 border border-slate-700">
+        <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-[10px]">✓</div>
+        <span class="text-xs font-bold tracking-tight uppercase">Copied to Clipboard</span>
+    </div>
+
+    <!-- Alliance Modal -->
+    <div id="allianceModal" class="modal-overlay">
+        <div class="bg-white w-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl">
+            <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+                <h2 class="text-xl font-black text-slate-900 uppercase tracking-tighter">Global Alliance Partners</h2>
+                <button onclick="closeAlliance()" class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center hover:bg-red-100 hover:text-red-600 transition-colors">✕</button>
+            </div>
+            <div class="p-8 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-8 custom-scroll">
+                <div>
+                    <h3 class="text-blue-600 font-black text-xs uppercase tracking-widest mb-4 border-b-2 border-blue-50 pb-2">Oneworld Alliance</h3>
+                    <pre class="mono text-[10px] text-slate-600 leading-relaxed">
+AA - AMERICAN AIRLINES
+AS - ALASKA AIRLINES
+AT - ROYAL AIR MAROC
+AY - FINNAIR
+BA - BRITISH AIRWAYS
+CX - CATHAY PACIFIC
+IB - IBERIA
+JL - JAPAN AIRLINES
+MH - MALAYSIA AIRLINES
+QF - QANTAS AIRWAYS
+QR - QATAR AIRWAYS
+RJ - ROYAL JORDANIAN
+UL - SRILANKAN AIRLINES
+FJ - FIJI AIRWAYS
+WY - OMAN AIR</pre>
+                </div>
+                <div>
+                    <h3 class="text-emerald-600 font-black text-xs uppercase tracking-widest mb-4 border-b-2 border-emerald-50 pb-2">Star Alliance</h3>
+                    <pre class="mono text-[10px] text-slate-600 leading-relaxed">
+A3 - AEGEAN AIRLINES
+AC - AIR CANADA
+AI - AIR INDIA
+AV - AVIANCA
+BR - EVA AIR
+CA - AIR CHINA
+CM - COPA AIRLINES
+ET - ETHIOPIAN AIRLINES
+LH - LUFTHANSA
+LO - LOT POLISH AIRLINES
+LX - SWISS INT. AIR LINES
+MS - EGYPTAIR
+NH - ALL NIPPON AIRWAYS
+NZ - AIR NEW ZEALAND
+OS - AUSTRIAN AIRLINES
+OU - CROATIA AIRLINES
+OZ - ASIANA AIRLINES
+SA - SOUTH AFRICAN
+SN - BRUSSELS AIRLINES
+SQ - SINGAPORE AIRLINES
+TG - THAI AIRWAYS
+TK - TURKISH AIRLINES
+TP - TAP PORTUGAL
+UA - UNITED AIRLINES
+ZH - SHENZHEN AIRLINES</pre>
+                </div>
+                <div>
+                    <h3 class="text-sky-500 font-black text-xs uppercase tracking-widest mb-4 border-b-2 border-sky-50 pb-2">SkyTeam Alliance</h3>
+                    <pre class="mono text-[10px] text-slate-600 leading-relaxed">
+AF - AIR FRANCE
+AM - AEROMEXICO
+AR - AEROLINEAS ARGENTINAS
+AZ - ALITALIA / ITA
+CI - CHINA AIRLINES
+DL - DELTA AIR LINES
+GA - GARUDA INDONESIA
+KE - KOREAN AIR
+KL - KLM ROYAL DUTCH
+KQ - KENYA AIRWAYS
+ME - MIDDLE EAST AIRLINES
+MF - XIAMEN AIRLINES
+MU - CHINA EASTERN
+RO - TAROM
+SK - SCANDINAVIAN
+SU - AEROFLOT</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Sidebar -->
+    <div class="w-72 bg-slate-900 text-white flex flex-col p-6 shrink-0 h-full">
+        <div class="flex items-center gap-3 mb-8">
+            <!-- New Aviation "M" Logo Container -->
+            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 p-1.5">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Modern Aviation M Shape -->
+                    <path d="M15 80 L40 20 L50 45 L60 20 L85 80" stroke="#2563eb" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                    <!-- Ground/Horizon Line -->
+                    <path d="M10 88 L90 88" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="font-extrabold text-sm tracking-tighter uppercase">Support.Portals</h2>
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Global Terminal</p>
+            </div>
+        </div>
+
+        <div class="flex-1 space-y-6 overflow-y-auto custom-scroll pr-2">
+            <div>
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">Core Tools</span>
+                <div class="space-y-2">
+                    <button onclick="openAlliance()" class="w-full text-left flex items-center justify-between group p-3 rounded-xl bg-blue-600/10 text-blue-400 border border-blue-600/20 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold uppercase tracking-tighter">
+                        <span>Check Alliances</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+                    </button>
+                    <a href="https://www.star-partners.com/login" target="_blank" class="portal-btn flex items-center justify-between group p-3 rounded-xl hover:bg-slate-800 text-xs font-semibold">
+                        <span>Star Partners</span>
+                        <svg class="opacity-0 group-hover:opacity-100 transition-opacity" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">IATA Codes Reference</span>
+                <div class="space-y-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                    <div>
+                        <p class="text-[9px] text-slate-400 font-bold uppercase">VALC Canada</p>
+                        <p class="mono text-[10px] text-white">YKXC42100 | 69567735</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] text-slate-400 font-bold uppercase">VALC USA</p>
+                        <p class="mono text-[10px] text-white">ATL1S211S | 11569902</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-6 border-t border-slate-800">
+            <div class="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                DATABASE ONLINE
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col bg-slate-50/50 h-full">
+        <!-- Search Header -->
+        <div class="p-8 pb-4">
+            <div class="search-bar flex items-center bg-white rounded-2xl border border-slate-200 p-2 transition-all shadow-sm">
+                <div class="pl-4 pr-3 text-slate-400">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </div>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Search carrier, IATA, or phone..." 
+                    class="flex-1 bg-transparent border-none outline-none py-3 text-sm font-medium placeholder:text-slate-400"
+                >
+                <div class="px-4">
+                    <span id="resultCount" class="mono text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="listContainer" class="flex-1 overflow-y-auto px-8 pb-8 space-y-4 custom-scroll">
+            <!-- Data dynamically injected -->
+        </div>
+    </div>
+
+    <script>
+        const airlineData = [
+            { name: "Air Canada", code: "AC", phone: "866-510-0263", email: "acmedical@aircanada.ca", notes: "Refund Policy in Case of Death", links: [{ label: "Find My Trip", url: "https://www.aircanada.com/home/ca/en/aco/trips" }, { label: "Schedule Policy", url: "https://www.aircanada.com/ca/en/ado/drs/agents/Schedule-change-policy.html#/" }, { label: "Refund Case of Death", url: "https://www.aircanada.com/ca/en/ado/drs/agents/refund-in-case-of-death.html#/" }] },
+            { name: "WestJet", code: "WS", phone: "877-664-3205", email: "agencysalessupport@westjet.com", notes: "Agency Support", links: [{ label: "Manage", url: "https://www.westjet.com/en-ca/manage/dashboard/lookup?sessionId=29-1-2026-2-35-58-15281" }] },
+            { name: "Qatar Airways", code: "QR", phone: "888-366-5666", email: "—", notes: "Global Sales Support", links: [{ label: "Trade Portal", url: "https://www.qatarairways.com/tradeportal/en-us/homepage.html" }, { label: "Name Correction", url: "https://www.qatarairways.com/tradeportal/en/bookingnticketing/Name-Correction.html" }] },
+            { name: "Delta / Air France / KLM / Virgin", code: "DL/AF/KL/VS", phone: "1-888-345-7587", email: "—", notes: "Ref: 69505903", links: [{ label: "Delta Trip", url: "https://www.delta.com/mytrips/" }, { label: "Air France Trip", url: "https://wwws.airfrance.us/trip" }] },
+            { name: "American Airlines", code: "AA", phone: "800-621-8489", email: "aasaleslink.support@aa.com", notes: "—", links: [{ label: "Find Reservation", url: "https://www.aa.com/booking/find-reservation" }, { label: "Home", url: "https://www.aa.com/homePage.do?locale=en_US" }] },
+            { name: "Lufthansa Group", code: "LH/OS/LX", phone: "1-844-735-5113", email: "keyaccountservices@lufthansa.com", notes: "Ref: 69505903 & 69567735", links: [{ label: "Portal", url: "https://www.lufthansa.com/gb/en/login" }, { label: "Swiss Login", url: "https://www.swiss.com/ch/en/login?deeplinkRedirect=true" }] },
+            { name: "United Airlines", code: "UA", phone: "800-521-0810", email: "PreferredOTA@united.com", notes: "Executive Support", links: [{ label: "Find My Trip", url: "https://www.united.com/en/us/manageres/mytrips" }, { label: "Jetstream", url: "https://jetstream.united.com/#/sub-link/a0F36000006V2voEAC" }] },
+            { name: "Philippine Airlines Canada", code: "PR", phone: "800-435-9725", email: "vancouversales@pal.com.ph", notes: "Toronto Sales: torontosales@pal.com.ph", links: [] },
+            { name: "Turkish Airlines USA/CAN", code: "TK", phone: "404-467-8849", email: "agencyhelpdesk.ca@thy.com", notes: "Canada Main: 514-935-0849 | After-Hours: 514-989-4499", links: [{label: "Manage", url: "https://www.turkishairlines.com/en-int/flights/manage-booking/"}] },
+            { name: "Porter Airlines", code: "PD", phone: "888-619-8622", email: "refund.services@flyporter.com", notes: "IATA: 4 | Agency Email: agency.services@flyporter.com", links: [{label: "Manage", url: "https://www.flyporter.com/en-ca/manage-flights/my-bookings"}, {label: "Agency Requests", url: "https://porteragency.zendesk.com/hc/en-ca/requests/new"}] },
+            { name: "LOT Polish", code: "LO", phone: "212-789-0977", email: "NAMagents@lot.com", notes: "Code: 38561", links: [] },
+            { name: "Emirates", code: "EK", phone: "800-777-3999", email: "salessupport.usa@emirates.com", notes: "—", links: [{label: "Manage", url: "https://www.emirates.com/english/manage-booking/"}] },
+            { name: "British Airways", code: "BA", phone: "1-833-598-4843", email: "—", notes: "PIN: 5129592 | Canada Line: 1-833-397-0694", links: [{label: "Manage", url: "https://www.britishairways.com/travel/managebooking/public/en_gb"}] },
+            { name: "Royal Air Maroc", code: "AT", phone: "514-600-0280", email: "—", notes: "Call Center: 514-285-1435", links: [] },
+            { name: "China Eastern", code: "MU", phone: "212-685-8685", email: "—", notes: "NYC: 212-685-8685 | LAX Office: 626-583-1500", links: [] },
+            { name: "Air Transat", code: "TS", phone: "1-877-993-9489", email: "—", notes: "Ext: 76058 | Travel Fusion Support: 877-872-6728", links: [{ label: "My Booking", url: "https://www.airtransat.com/en-CA/My-booking" }] },
+            { name: "Asiana Airlines", code: "OZ", phone: "800-227-4262", email: "—", notes: "—", links: [] },
+            { name: "Cathay Pacific", code: "CX", phone: "Contact Website", email: "—", notes: "—", links: [{label: "Contact", url: "https://www.cathaypacific.com/cx/en_US/contact-us.html"}] },
+            { name: "Avianca", code: "AV", phone: "800-722-8222", email: "—", notes: "Enter code: 24124", links: [{ label: "Trade Portal", url: "https://trade.avianca.com/#/private/home" }] },
+            { name: "Sun Country Airlines", code: "SY", phone: "651-905-2737", email: "—", notes: "—", links: [] },
+            { name: "Alaska Airlines", code: "AS", phone: "800-327-2755", email: "—", notes: "—", links: [{ label: "Reservation", url: "https://reservations.alaskaair.com/reservation" }] },
+            { name: "Qantas", code: "QF", phone: "800-227-4795", email: "—", notes: "—", links: [{ label: "Sch Change Policy", url: "https://www.qantas.com/agencyconnect/us/en/policy-and-guidelines/changes-reissues-and-refunds/qantas-and-other-airline-schedule-change-policy-.html" }] },
+            { name: "Air New Zealand", code: "NZ", phone: "800-494-1033", email: "—", notes: "—", links: [{label: "Sch Changes", url: "https://www.airnzagent.com.au/schedule-changes"}] },
+            { name: "Singapore Airlines", code: "SQ", phone: "310-893-0719", email: "—", notes: "Canada Line: +1(236)200-0990", links: [{ label: "Manage", url: "https://www.singaporeair.com/en_UK/sg/plan-travel/your-booking/managebooking/?msockid=07e0eef5b4566e7f1271f81ab54d6ff6" }, { label: "Agent 360", url: "https://agent360.singaporeair.com/en_UK/us/index" }] },
+            { name: "AeroMexico", code: "AM", phone: "Contact Website", email: "—", notes: "—", links: [{ label: "Manage", url: "https://www.aeromexico.com/en-gb/manage-your-booking?msockid=07e0eef5b4566e7f1271f81ab54d6ff6" }, { label: "Business Chat", url: "https://aeromexicobusiness.com/" }] },
+            { name: "Saudia", code: "SV", phone: "Contact Website", email: "—", notes: "—", links: [{ label: "Manage", url: "https://www.saudia.com/en-SA/book-and-manage/manage/manage-booking" }] },
+            { name: "SAS Scandinavian", code: "SK", phone: "Contact Website", email: "—", notes: "—", links: [{ label: "My Trips", url: "https://www.flysas.com/us-en/my-trips" }, { label: "IROP Policy", url: "https://www.sassalesinfo.com/irregularity-procedures/standard-procedures/schedule-change-two-days-or-more-before-departure" }] },
+            { name: "Spirit Airlines", code: "NK", phone: "Contact Website", email: "—", notes: "—", links: [{ label: "Find Trip", url: "https://www.spirit.com/my-trips/find-trip" }] },
+            { name: "Virgin Atlantic", code: "VS", phone: "Contact Website", email: "—", notes: "—", links: [{ label: "My Trips", url: "https://www.virginatlantic.com/my-trips/search" }, { label: "Sch Change Policy", url: "https://flywith.virginatlantic.com/gb/en/partner-hub/policies/schedule-changes.html" }] },
+            { name: "LATAM Airlines", code: "LA", phone: "Contact Website", email: "—", notes: "—", links: [{ label: "IROP Protex", url: "https://www.latamtrade.com/en_us/procom/irop-protex-pax-protex-pt" }, { label: "Contingency", url: "https://www.latamtrade.com/en_un/contingency" }] },
+            { name: "JetBlue", code: "B6", phone: "800-538-2583", email: "—", notes: "Specialist Support", links: [{label: "Agent Portal", url: "https://www.jetblue.com/travel-agents"}, {label: "Sch Change", url: "https://www.jetblue.com/travel-agents/schedule-change"}] },
+            { name: "EVA Air", code: "BR", phone: "1-800-695-1188", email: "—", notes: "YYZ Pax: 1-416-597-8887 | YVR Pax: 1-604-303-3338 | YYZ Res: 1-800-695-1188", links: [] },
+            { name: "Flair Airlines", code: "F8", phone: "Check Webchat", email: "—", notes: "Low Cost Carrier", links: [{label: "Manage Res", url: "https://res.flyflair.com/"}, {label: "Support Chat", url: "https://flyflair.zendesk.com/hc/en-us"}] }
+        ];
+
+        const searchInput = document.getElementById('searchInput');
+        const listContainer = document.getElementById('listContainer');
+        const resultCount = document.getElementById('resultCount');
+        const toast = document.getElementById('copyToast');
+        const allianceModal = document.getElementById('allianceModal');
+
+        function openAlliance() { allianceModal.classList.add('active'); }
+        function closeAlliance() { allianceModal.classList.remove('active'); }
+
+        function showToast() {
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function copyToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast();
+        }
+
+        function parseNotesForPhones(notes) {
+            const phoneRegex = /(\d{1,3}-\d{3}-\d{3}-\d{4}|\d{3}-\d{3}-\d{4}|\d{3}-\d{4})/g;
+            let html = notes;
+            const matches = notes.match(phoneRegex) || [];
+            matches.forEach(match => {
+                const tag = `<span class="phone-tag" onclick="copyToClipboard('${match}')">${match}</span>`;
+                html = html.replace(match, tag);
+            });
+            return html;
+        }
+
+        function renderList(data) {
+            listContainer.innerHTML = '';
+            if (data.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-20 text-slate-300">
+                        <p class="text-sm font-bold uppercase tracking-widest italic opacity-50">Empty Terminal Response</p>
+                    </div>`;
+                resultCount.innerText = '00';
+                return;
+            }
+            const sortedData = [...data].sort((a, b) => a.name.localeCompare(b.name));
+            sortedData.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = "airline-card p-6 rounded-2xl flex items-center justify-between group bg-white";
+                card.style.animationDelay = `${index * 20}ms`;
+                const linkHtml = (item.links || []).map(link => 
+                    `<a href="${link.url}" target="_blank" class="text-[9px] font-bold text-slate-400 hover:text-blue-600 px-2 py-1 bg-slate-100 rounded-md transition-all">
+                        ${link.label.toUpperCase()}
+                    </a>`
+                ).join('');
+                const processedNotes = item.notes !== '—' ? parseNotesForPhones(item.notes) : null;
+                card.innerHTML = `
+                    <div class="flex items-center gap-6 flex-1 min-w-0">
+                        <div class="mono text-[10px] font-black text-slate-400 bg-slate-100 w-12 h-12 flex items-center justify-center rounded-xl shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                            ${item.code.split('/')[0]}
+                        </div>
+                        <div class="truncate">
+                            <h3 class="font-bold text-base tracking-tight text-slate-800 leading-none mb-2">${item.name}</h3>
+                            <div class="flex flex-wrap items-center gap-2">
+                                ${linkHtml}
+                                ${item.email && item.email !== '—' ? `<span class="text-[9px] text-slate-400 font-medium" title="${item.email}">${item.email}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2 ml-4 shrink-0 min-w-[280px]">
+                        <div class="flex flex-wrap justify-end gap-2">
+                            <button onclick="copyToClipboard('${item.phone}')" class="mono text-xs font-bold text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-all border border-blue-100 bg-blue-50/30">
+                                ${item.phone}
+                            </button>
+                        </div>
+                        ${processedNotes ? `
+                            <div class="text-[10px] font-medium text-slate-500 text-right leading-relaxed flex flex-wrap justify-end gap-1">
+                                ${processedNotes}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+            resultCount.innerText = data.length.toString().padStart(2, '0');
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = airlineData.filter(item => 
+                item.name.toLowerCase().includes(term) || 
+                item.code.toLowerCase().includes(term) || 
+                item.phone.toLowerCase().includes(term) ||
+                item.notes.toLowerCase().includes(term) ||
+                item.email.toLowerCase().includes(term)
+            );
+            renderList(filtered);
+        });
+
+        renderList(airlineData);
+    </script>
+</body>
+</html>
